@@ -1,0 +1,23 @@
+{
+  "name": "pizarra-colaborativa",
+  "version": "1.0.0",
+  "description": "Pizarra colaborativa en tiempo real con Node.js, Socket.IO y Canvas.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": [
+    "websocket",
+    "canvas",
+    "socket.io"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}
