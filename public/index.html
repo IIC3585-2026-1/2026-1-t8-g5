@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pizarra colaborativa</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__inner">
+        <div class="brand-mark" aria-hidden="true"><span>S</span></div>
+        <div>
+          <h1>Pizarra colaborativa</h1>
+        </div>
+        <p id="connection-status" class="connection-status" role="status" aria-live="polite">
+          <span class="connection-status__indicator" aria-hidden="true"></span>
+          <span>Conectando…</span>
+        </p>
+      </div>
+    </header>
+
+    <main class="app">
+      <aside class="sidebar" aria-label="Panel de colaboración">
+        <section class="panel identity-panel" aria-labelledby="identity-title">
+          <p class="panel__eyebrow">Tu identidad</p>
+          <h2 id="identity-title">¿Quién está dibujando?</h2>
+          <form id="identity-form" class="identity-form">
+            <label for="display-name">Tu nombre</label>
+            <div class="identity-form__row">
+              <input id="display-name" name="displayName" maxlength="24" autocomplete="nickname" />
+              <button type="submit">Guardar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel" aria-labelledby="participants-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">En línea</p>
+              <h2 id="participants-title">Participantes</h2>
+            </div>
+            <span id="participant-count" class="participant-count">0</span>
+          </div>
+          <ul id="participants" class="participants" aria-live="polite"></ul>
+        </section>
+      </aside>
+
+      <section class="drawing-area" aria-labelledby="board-title">
+        <div class="toolbar" aria-label="Herramientas de la pizarra">
+          <fieldset class="tool-picker">
+            <legend>Herramienta</legend>
+            <div class="tool-picker__options">
+              <button id="draw-tool" class="tool-button tool-button--selected" type="button" aria-pressed="true">
+                Lápiz
+              </button>
+              <button id="fill-tool" class="tool-button" type="button" aria-pressed="false">
+                Cubeta
+              </button>
+            </div>
+          </fieldset>
+          <fieldset class="color-picker">
+            <legend>Color seleccionado</legend>
+            <div class="color-picker__options">
+              <button class="color-swatch color-swatch--selected" type="button" data-color="#e31b23" aria-label="Rojo" aria-pressed="true"></button>
+              <button class="color-swatch" type="button" data-color="#1261a0" aria-label="Azul" aria-pressed="false"></button>
+              <button class="color-swatch" type="button" data-color="#f5c518" aria-label="Amarillo" aria-pressed="false"></button>
+              <button class="color-swatch" type="button" data-color="#172033" aria-label="Negro" aria-pressed="false"></button>
+              <button class="color-swatch" type="button" data-color="#22a06b" aria-label="Verde" aria-pressed="false"></button>
+            </div>
+          </fieldset>
+          <button id="clear-canvas" class="clear-button" type="button">Limpiar pizarra</button>
+        </div>
+        <div id="activity" class="activity" aria-live="polite">
+          Selecciona el lápiz para dibujar o la cubeta para rellenar.
+        </div>
+        <div class="board">
+          <h2 id="board-title" class="visually-hidden">Lienzo de dibujo</h2>
+          <canvas id="drawing-board" width="1200" height="700">
+            Tu navegador no soporta el elemento canvas.
+          </canvas>
+        </div>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+  </body>
+</html>
