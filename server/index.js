@@ -151,6 +151,8 @@ io.on('connection', (socket) => {
       color: user.color,
       userId: user.id,
       userName: user.name,
+      // Agrupa todos los segmentos de un mismo trazo para poder deshacerlo de una vez.
+      actionId: typeof segment.actionId === 'string' ? segment.actionId : `${user.id}-${Date.now()}`,
     };
 
     saveOperation(sharedSegment);
@@ -177,11 +179,35 @@ io.on('connection', (socket) => {
       color: user.color,
       userId: user.id,
       userName: user.name,
+      actionId: typeof fill.actionId === 'string' ? fill.actionId : `${user.id}-${Date.now()}`,
     };
 
     saveOperation(sharedFill);
     socket.broadcast.emit('canvas:fill', sharedFill);
     if (typeof acknowledge === 'function') acknowledge({ received: true });
+  });
+
+  // Deshace la última acción (trazo o relleno) de quien lo solicita.
+  // Se busca de atrás hacia adelante la operación más reciente de ese usuario,
+  // se elimina todo lo que comparta su actionId (un trazo puede tener varios
+  // segmentos) y se reenvía el historial actualizado a todos para mantener
+  // la pizarra sincronizada, incluso si hay varios usuarios dibujando a la vez.
+  socket.on('undo:request', (acknowledge) => {
+    const lastOwnOperation = [...canvasHistory]
+      .reverse()
+      .find((operation) => operation.userId === user.id);
+
+    if (!lastOwnOperation) {
+      if (typeof acknowledge === 'function') acknowledge({ undone: false });
+      return;
+    }
+
+    const { actionId } = lastOwnOperation;
+    canvasHistory = canvasHistory.filter((operation) => operation.actionId !== actionId);
+
+    console.log(`${user.name} deshizo su última acción (${actionId})`);
+    io.emit('canvas:sync', canvasHistory);
+    if (typeof acknowledge === 'function') acknowledge({ undone: true });
   });
 
   // Vacía la pizarra actual y la que recibirán los usuarios futuros.

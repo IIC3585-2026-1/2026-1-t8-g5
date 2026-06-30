@@ -5,6 +5,7 @@ const statusText = status.querySelector('span:last-child');
 const canvas = document.querySelector('#drawing-board');
 const context = canvas.getContext('2d');
 const clearButton = document.querySelector('#clear-canvas');
+const undoButton = document.querySelector('#undo-action');
 const colorButtons = document.querySelectorAll('[data-color]');
 const drawToolButton = document.querySelector('#draw-tool');
 const fillToolButton = document.querySelector('#fill-tool');
@@ -21,6 +22,14 @@ let currentUserId = null;
 let selectedColor = '#e31b23';
 let selectedTool = 'draw';
 let activityTimer = null;
+let currentActionId = null;
+
+// Genera un identificador simple para agrupar los segmentos de un mismo trazo.
+function createActionId() {
+  return (window.crypto && window.crypto.randomUUID)
+    ? window.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 context.lineWidth = 4;
 context.lineCap = 'round';
@@ -56,7 +65,7 @@ function startDrawing(event) {
 
   if (selectedTool === 'fill') {
     const point = getCanvasPoint(event);
-    const fill = { x: point.x, y: point.y, color: selectedColor };
+    const fill = { x: point.x, y: point.y, color: selectedColor, actionId: createActionId() };
 
     if (fillArea(fill)) {
       socket.emit('canvas:fill', fill);
@@ -69,6 +78,7 @@ function startDrawing(event) {
   canvas.setPointerCapture(event.pointerId);
   isDrawing = true;
   previousPoint = getCanvasPoint(event);
+  currentActionId = createActionId();
   socket.emit('drawing:state', { isDrawing: true, color: selectedColor });
   setActivity('Estás dibujando…');
 }
@@ -193,6 +203,7 @@ function draw(event) {
     x1: currentPoint.x,
     y1: currentPoint.y,
     color: selectedColor,
+    actionId: currentActionId,
   };
 
   // Se pinta primero de forma local.
@@ -283,6 +294,17 @@ clearButton.addEventListener('click', () => {
   setActivity('Limpiaste la pizarra para todos.', true);
 });
 
+undoButton.addEventListener('click', () => {
+  socket.emit('undo:request', (response) => {
+    if (!response || !response.undone) {
+      setActivity('No tienes trazos propios para deshacer.', true);
+      return;
+    }
+
+    setActivity('Deshiciste tu última acción.', true);
+  });
+});
+
 identityForm.addEventListener('submit', (event) => {
   event.preventDefault();
   socket.emit('user:rename', displayNameInput.value, (response) => {
@@ -314,15 +336,24 @@ socket.on('server:ready', (message) => {
 
 socket.on('presence:update', renderParticipants);
 
-socket.on('canvas:history', (operations) => {
-  // Un usuario que llega después reconstruye la pizarra en el orden original de creación.
+function renderHistory(operations) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   operations.forEach(applyCanvasOperation);
+}
+
+socket.on('canvas:history', (operations) => {
+  // Un usuario que llega después reconstruye la pizarra en el orden original de creación.
+  renderHistory(operations);
   setActivity(
     operations.length > 0
       ? `Recuperamos ${operations.length} acciones anteriores.`
       : 'La ciudad está tranquila. Empieza a dibujar.',
   );
+});
+
+socket.on('canvas:sync', (operations) => {
+  // El servidor reenvía el historial completo tras un "deshacer" para mantener a todos sincronizados.
+  renderHistory(operations);
 });
 
 socket.on('drawing:segment', (segment) => {
